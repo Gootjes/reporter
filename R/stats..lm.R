@@ -1,6 +1,10 @@
 
+#' @export
+extract.stats..lm <- function(x, options) {
 
-extract.stats..lm <- function(x, options = list(ci = .95)) {
+  if(is.null(options)) {
+    options <- list(ci = .95)
+  }
 
   s <- stats::summary.lm(x)
 

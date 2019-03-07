@@ -1,19 +1,22 @@
 
+.namespace_separator <- ".."
+
+.default_template <- "apa6"
+
+.as_valid_function_path <- function(x) {
+  stringr::str_replace(string = x, pattern = "::", replacement = .namespace_separator)
+}
+
+.get_template <- function() {
+  getOption("reporter.template", .default_template)
+}
+
+.set_template <- function(t) {
+  options("reporter.template" = t)
+}
+
 .find <- function(f) {
   UseMethod(".find", f)
-}
-
-
-.find.function <- function(f) {
-  .find(f = as.character(match.call()$f))
-}
-
-.find.name <- function(f) {
-  .find(f = as.character(f))
-}
-
-.find.call <- function(f) {
-  .find(f = as.character(match.call()$f))
 }
 
 .find.character <- function(f) {
@@ -21,7 +24,7 @@
   if(length(f) == 3) {
     return(
       paste0(
-        f[2],"..",f[3]
+        f[2],"::",f[3]
         )
       )
   }
@@ -31,25 +34,7 @@
   if(any(is.na(s))) {
     s <- stringr::str_match(string = f, pattern = "([a-zA-Z0-9.]+)")
 
-
-
-    #ff <- getFunction(s[1,2])
-
-    #e <- environment(ff)
-
-    # if(isNamespace(e)) {
-    #   return(
-    #     paste0(
-    #       getNamespaceName(e), "..", f
-    #     )
-    #   )
-    # } else {
-    #   stop("There exists no namespace for the function")
-    # }
-
     e <- findFunction(s[1,2])
-
-    print(f)
 
     stopifnot(length(e) != 0)
 
@@ -58,7 +43,7 @@
     return(
       paste0(
         stringr::str_split_fixed(string = attributes(e)$name, pattern = ":", n = 2)[2],
-        "..",
+        "::",
         s[1,2]
         )
       )
@@ -66,26 +51,42 @@
   } else {
     return(
       paste0(
-        s[1,2], "..", s[1,3]
+        s[1,2], "::", s[1,3]
       )
     )
   }
 }
 
 #' @export
-report <- function(x, fun, template, options) {
+report <- function(x, fun, options = NULL, template = .get_template()) {
+
+  if("function" %in% class(fun)) {
+    f <- .find(f = as.character(match.call()$fun))
+  } else if("character" %in% class(fun)) {
+    f <- .find(f = fun)
+  } else {
+    stop("Unsupported function class: ", class(fun))
+  }
 
   x <- structure(x, reporter = list(options = options))
 
-  e <- extract(x, fun = match.call()$fun, options)
+  e <- extract(x, fun = f, options)
 
-  render(e, template, options)
+  render(e, options, template)
 }
 
 #' @export
-extract <- function(x, fun, options) {
+extract <- function(x, fun, options = NULL) {
 
-  f <- .find(f = fun)
+  if("function" %in% class(fun)) {
+    f <- .find(f = as.character(match.call()$fun))
+  } else if("character" %in% class(fun)) {
+    f <- .find(f = fun)
+  } else {
+    stop("Unsupported function class: ", class(fun))
+  }
+
+  f <- .as_valid_function_path(f)
 
   ff <- getFunction(paste0("extract", ".", f))
 
@@ -93,7 +94,7 @@ extract <- function(x, fun, options) {
 }
 
 #' @export
-render <- function(x, template, options) {
+render <- function(x, options = NULL, template = .get_template()) {
 
   stopifnot("reporter.Extract" %in% class(x))
 

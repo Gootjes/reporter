@@ -25,7 +25,9 @@ render.apa6 <- function(x, options) {
 
 render.apa6.LinearModel <- function(x, options) {
 
-
+  if(is.null(options)) {
+    options <- list(ci = .95)
+  }
 
   list(
     overall_model = list(
@@ -36,11 +38,11 @@ render.apa6.LinearModel <- function(x, options) {
     ),
     estimates = Map(function(e){
       list(
-        Estimate = fill_in("_B_ = `r round(B,2)`", e),
-        SE = fill_in("_SE_ = `r round(SE,2)`", e),
+        Estimate = fill_in("_B_ = `r round(B, 2)`", e),
+        SE = fill_in("_SE_ = `r round(SE, 2)`", e),
         t = fill_in("_t_(`r dendf`) = `r round(t, 2)`", c(e, list(dendf = x$fstatistic$dendf))),
         p = fill_in("`r apa6_p(p)`", e),
-        ci = fill_in("`r options$ci*100`% CI [`r round(lb, 2)`; `r round(ub, 2)`]", c(e, options = options))
+        ci = fill_in("`r options$ci*100`% CI [`r round(lb, 2)`; `r round(ub, 2)`]", c(e, list(options = options)))
         )
     }, x$coefficients)
 
